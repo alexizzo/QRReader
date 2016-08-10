@@ -1,4 +1,4 @@
-package it.alexizzo.argonreader;
+package it.alexizzo.QRReader;
 
 import org.junit.Test;
 

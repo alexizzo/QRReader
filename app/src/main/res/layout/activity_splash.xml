@@ -3,7 +3,7 @@
     android:background="@color/myColorPrimary" android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="it.alexizzo.argonreader.activities.Splashactivity">
+    tools:context="it.alexizzo.QRReader.activities.Splashactivity">
 
     <ImageView
         android:layout_width="wrap_content"

@@ -8,16 +8,16 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name=".activities.Splashactivity">
+        <activity android:name="it.alexizzo.QRReader.activities.Splashactivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".activities.MenuActivity" />
-        <activity android:name=".activities.ListActivity" />
-        <activity android:name=".activities.CameraActivity" android:screenOrientation="portrait" />
+        <activity android:name="it.alexizzo.QRReader.activities.MenuActivity" />
+        <activity android:name="it.alexizzo.QRReader.activities.ListActivity" />
+        <activity android:name="it.alexizzo.QRReader.activities.CameraActivity" android:screenOrientation="portrait" />
         <activity
             android:name="com.google.zxing.client.android.CapturaActivity"/>
     </application>

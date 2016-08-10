@@ -1,26 +1,12 @@
-package it.alexizzo.argonreader;
+package it.alexizzo.QRReader;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
-import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentTransaction;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.hardware.Camera;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -32,9 +18,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
-import java.io.File;
-
-import it.alexizzo.argonreader.activities.CameraActivity;
+import it.alexizzo.QRReader.activities.CameraActivity;
+import it.alexizzo.argonreader.R;
 
 /**
  * Created by alessandro on 07/08/16.

@@ -1,4 +1,4 @@
-package it.alexizzo.argonreader;
+package it.alexizzo.QRReader;
 
 import android.content.Context;
 import android.content.res.Resources;

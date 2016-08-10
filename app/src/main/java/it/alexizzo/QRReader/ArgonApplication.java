@@ -1,4 +1,4 @@
-package it.alexizzo.argonreader;
+package it.alexizzo.QRReader;
 
 import android.app.Application;
 import android.content.Context;
@@ -7,7 +7,6 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import java.io.File;
-import java.util.jar.Manifest;
 
 /**
  * Created by alessandro on 09/08/16.

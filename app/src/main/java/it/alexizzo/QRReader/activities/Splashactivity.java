@@ -1,4 +1,4 @@
-package it.alexizzo.argonreader.activities;
+package it.alexizzo.QRReader.activities;
 
 import android.Manifest;
 import android.app.Activity;
@@ -8,14 +8,13 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 
-import it.alexizzo.argonreader.ArgonApplication;
+import it.alexizzo.QRReader.ArgonApplication;
 import it.alexizzo.argonreader.R;
 
 /**

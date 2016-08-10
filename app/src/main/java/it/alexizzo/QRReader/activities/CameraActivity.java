@@ -1,9 +1,8 @@
-package it.alexizzo.argonreader.activities;
+package it.alexizzo.QRReader.activities;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
@@ -15,14 +14,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.github.rahatarmanahmed.cpv.CircularProgressView;
 
-import it.alexizzo.argonreader.CameraSurfaceView;
+import it.alexizzo.QRReader.CameraSurfaceView;
 import it.alexizzo.argonreader.R;
 
 /**

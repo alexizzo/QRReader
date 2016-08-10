@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:id="@+id/rl"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="it.alexizzo.argonreader.activities.CameraActivity"
+    tools:context="it.alexizzo.QRReader.activities.CameraActivity"
     >
 
 

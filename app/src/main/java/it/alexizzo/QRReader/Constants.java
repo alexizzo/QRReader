@@ -1,4 +1,4 @@
-package it.alexizzo.argonreader;
+package it.alexizzo.QRReader;
 
 /**
  * Created by alessandro on 07/08/16.
