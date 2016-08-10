@@ -1,0 +1,28 @@
+#extension GL_OES_EGL_image_external : require
+
+precision mediump float;
+
+uniform samplerExternalOES texture;
+//uniform sampler2D texture;
+
+varying vec2 v_textureCoord;
+varying vec2 v_position;
+varying float v_type;
+varying float v_found;
+
+void main(void) {
+
+    //if((v_position.x<=0.8f && v_position.x>=-0.8f) && (v_position.y<=0.8f && v_position.y>=-0.8f))
+	//    gl_FragColor = texture2D(texture, v_textureCoord);
+	//else gl_FragColor = color * texture2D(texture, v_textureCoord);
+
+
+	//gl_FragColor = texture2D(texture, v_textureCoord);
+    if(v_type==1.0)
+        gl_FragColor = texture2D(texture, v_textureCoord);
+        else {
+            if(v_found == 0.0) gl_FragColor = vec4(1.0f, 0.0f, 0.0f, (1.0f-v_position.y));
+            else gl_FragColor = vec4(0.1f, 1.0f, 0.0f, 1.0f);
+        }
+
+}

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@android:color/white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/rl"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="it.alexizzo.argonreader.activities.CameraActivity"
+    >
+
+
+
+    <FrameLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:id="@+id/cameraSurfaceView"
+    />
+
+
+    <include
+        android:id="@+id/layout"
+        layout="@layout/mirino_camera"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"/>
+
+
+    <com.github.rahatarmanahmed.cpv.CircularProgressView
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_centerInParent="true"
+        android:id="@+id/cpv"
+        android:visibility="gone"
+        app:cpv_color="@color/myColorPrimary"
+        app:cpv_indeterminate="true"
+        app:cpv_animAutostart="true"/>
+</RelativeLayout>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@android:color/transparent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@drawable/black"
+        android:layout_alignParentTop="true"
+        android:id="@+id/top"/>
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@drawable/black"
+        android:layout_alignParentBottom="true"
+        android:id="@+id/bottom"/>
+
+    <ImageView
+        android:layout_width="60dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/black"
+        android:layout_alignParentLeft="true"
+        android:id="@+id/left"
+        android:layout_below="@+id/top"
+        android:layout_above="@+id/bottom"/>
+
+
+    <ImageView
+        android:layout_width="60dp"
+        android:layout_height="match_parent"
+        android:background="@drawable/black"
+        android:layout_alignParentRight="true"
+        android:id="@+id/right"
+        android:layout_below="@+id/top"
+        android:layout_above="@+id/bottom"/>
+
+    <!--<Button-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--android:text="Scatta"-->
+        <!--android:id="@+id/b_scatta"-->
+        <!--android:layout_marginBottom="4dp"/>-->
+
+</RelativeLayout>

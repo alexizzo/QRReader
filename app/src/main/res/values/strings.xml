@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ArgonReader</string>
+    <string name="app_name2">Argon</string>
+    <string name="warningPermission">Devi accettare</string>
+</resources>
