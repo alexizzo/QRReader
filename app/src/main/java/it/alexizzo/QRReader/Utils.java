@@ -1,9 +1,11 @@
 package it.alexizzo.QRReader;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.ExifInterface;
 import android.opengl.GLES20;
 import android.os.Environment;
 
@@ -220,5 +222,26 @@ public class Utils {
             return true;
         }
         return false;
+    }
+
+
+    private static void checkCameraRotation(File file) {
+        int rotation = 0;
+        try {
+            ExifInterface exif = new ExifInterface(file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean checkCameraHardware(Context context) {
+        if (context.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_CAMERA)) {
+            // this device has a camera
+            return true;
+        } else {
+            // no camera on this device
+            return false;
+        }
     }
 }

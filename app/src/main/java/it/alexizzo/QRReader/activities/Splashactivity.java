@@ -27,7 +27,7 @@ public class Splashactivity extends Activity {
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 102;
     private static final int WRITE_EXTERNAL_STORAGE_PERMISSION_REQUEST_CODE = 103;
     private volatile boolean isGranted;
-
+    private Handler mHandler;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,26 +35,21 @@ public class Splashactivity extends Activity {
         if(savedInstanceState != null && savedInstanceState.containsKey("isGranted"))
             isGranted = savedInstanceState.getBoolean("isGranted");
         else isGranted = false;
-        checkPermissions();
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                while(!isGranted);
-                startMenuActivity();
-                finish();
-            }
-        }, 3000);
+        mHandler = new Handler();
     }
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkPermissions();
+    }
 
     private void checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!checkPermission(android.Manifest.permission.INTERNET, INTERNET_PERMISSION_REQUEST_CODE)) {
-                Log.d(sTag, "Permissions - INTERNET permission NOT GRANTED");
-                return;
-            } else Log.d(sTag, "Permissions - INTERNET permission GRANTED");
+//            if (!checkPermission(android.Manifest.permission.INTERNET, INTERNET_PERMISSION_REQUEST_CODE)) {
+//                Log.d(sTag, "Permissions - INTERNET permission NOT GRANTED");
+//                return;
+//            } else Log.d(sTag, "Permissions - INTERNET permission GRANTED");
             if (!checkPermission(Manifest.permission.CAMERA, CAMERA_PERMISSION_REQUEST_CODE)) {
                 Log.d(sTag, "Permissions - CAMERA permission NOT GRANTED");
                 return;
@@ -69,25 +64,34 @@ public class Splashactivity extends Activity {
 
     private void continueOnCreate() {
         isGranted = true;
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                while(!isGranted);
+                startMenuActivity();
+                finish();
+            }
+        }, 3000);
     }
 
     private boolean checkPermission(final String permission, final int requestCode) {
         if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     permission)) {
-//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-//                builder.setMessage(getResources().getString(R.string.warningPermission));
-//                builder.setCancelable(false);
-//                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-//                    @Override
-//                    public void onClick(DialogInterface dialog, int which) {
-//                        ActivityCompat.requestPermissions(Splashactivity.this,
-//                                new String[]{permission},
-//                                requestCode);
-//                    }
-//                });
-//                AlertDialog alert = builder.create();
-//                alert.show();
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setMessage("Per poter usare l'app, devi accettare i permessi richiesti");
+                builder.setCancelable(false);
+                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        ActivityCompat.requestPermissions(Splashactivity.this,
+                                new String[]{permission},
+                                requestCode);
+                    }
+                });
+                AlertDialog alert = builder.create();
+                alert.show();
+                return true;
             } else {
                 ActivityCompat.requestPermissions(this,
                         new String[]{permission},
@@ -100,9 +104,10 @@ public class Splashactivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Log.d(sTag, "onRequestPermissionsResult");
         if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage(getResources().getString(R.string.warningPermission));
+            builder.setMessage("Bla bla bla");
             builder.setCancelable(false);
             builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                 @Override
@@ -113,7 +118,7 @@ public class Splashactivity extends Activity {
             AlertDialog alert = builder.create();
             alert.show();
         } else {
-            if(permissions[0] == Manifest.permission.WRITE_EXTERNAL_STORAGE) ArgonApplication.setMediaCacheDir();
+            if(permissions != null && permissions.length>0 && permissions[0] == Manifest.permission.WRITE_EXTERNAL_STORAGE) ArgonApplication.setMediaCacheDir();
             checkPermissions();
         }
     }

@@ -7,6 +7,7 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.opengl.GLSurfaceView;
+import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -30,6 +31,7 @@ public class CameraSurfaceView extends GLSurfaceView {
 
 
     private CameraSurfaceRenderer mRenderer;
+    private CameraSurfaceRendererPreLollilop mRendererPreLollilop;
     private ViewGroup mContentLayout;
     private CameraActivity mCameraActivity;
     public CameraSurfaceView(Context context) {
@@ -40,13 +42,21 @@ public class CameraSurfaceView extends GLSurfaceView {
     public CameraSurfaceView(Context context, AttributeSet attrs) {
 
         super(context, attrs);
-        setEGLConfigChooser(false);
         setEGLContextClientVersion(2);
+        setEGLConfigChooser(false);
 //        setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         mCameraActivity = (CameraActivity) context;
 //        getHolder().setFormat(PixelFormat.TRANSPARENT);
-        mRenderer = new CameraSurfaceRenderer(this);
-        setRenderer(mRenderer);
+
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            mRendererPreLollilop = new CameraSurfaceRendererPreLollilop(this);
+            setRenderer(mRendererPreLollilop);
+        }
+        else {
+            mRenderer = new CameraSurfaceRenderer(this);
+            setRenderer(mRenderer);
+        }
+//        setRenderer(mRenderer);
         getHolder().setFormat(PixelFormat.TRANSLUCENT);
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY); //renderizza solo quando chiamo requestRender();
 //        setPreserveEGLContextOnPause(true);
@@ -64,7 +74,7 @@ public class CameraSurfaceView extends GLSurfaceView {
     }
 
     public void surfaceDestroyed ( SurfaceHolder holder ) {
-        mRenderer.close();
+        if(mRendererPreLollilop != null) mRendererPreLollilop.close();
         super.surfaceDestroyed ( holder );
     }
 
@@ -76,14 +86,15 @@ public class CameraSurfaceView extends GLSurfaceView {
     public void onResume() {
         Log.d(sTag, "onResume");
         super.onResume();
-        mRenderer.onResume();
+        if(mRenderer!=null) mRenderer.onResume();
+        if(mRendererPreLollilop != null) mRendererPreLollilop.onResume();
     }
 
     @Override
     public void onPause() {
         Log.d(sTag, "onPause");
         super.onPause();
-        mRenderer.onPause();
+        if(mRenderer!=null) mRenderer.onPause();
     }
 
     public ViewGroup getContentLayout(){
@@ -184,7 +195,7 @@ public class CameraSurfaceView extends GLSurfaceView {
 //    }
 
     public void setDimensionForLine(float w1, float w2, float h1, float h2){
-        mRenderer.setDimensionForLine(w1, w2, h1, h2);
+        if(mRenderer!=null) mRenderer.setDimensionForLine(w1, w2, h1, h2);
     }
 }
 

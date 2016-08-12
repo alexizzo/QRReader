@@ -14,6 +14,9 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.CameraProfile;
+import android.media.ExifInterface;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -24,6 +27,7 @@ import android.os.HandlerThread;
 import android.support.v4.app.ActivityCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 
 import com.google.zxing.BinaryBitmap;
@@ -47,6 +51,7 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -62,11 +67,10 @@ import it.alexizzo.argonreader.R;
 
 /**
  * Ordine chiamate
- *     1) Constructor
- *     2)onResume
- *     3)onSurfaceCreated
- *   Se si parte da onResume(nell'activity), no Constructor
- *
+ * 1) Constructor
+ * 2)onResume
+ * 3)onSurfaceCreated
+ * Se si parte da onResume(nell'activity), no Constructor
  */
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener {
@@ -97,49 +101,16 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
     private int width, height;
     private FloatBuffer pVertex, pTexCoord, lineVertex, lineTexVertex;
 
+    private long mThreadRecapthId;
 
     //da capire che fanno
-//    private Size mPreviewSize;
+    private Size mPreviewSize;
     private CameraCaptureSession mCaptureSession;
     private CaptureRequest.Builder mPreviewRequestBuilder;
     private HandlerThread mBackgroundThread;
     private Handler mBackgroundHandler;
     private Surface mSurface;
-    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
-        @Override
-        public void onOpened(CameraDevice cameraDevice) {
-            Log.d(sTag, "openCamera onOpened");
-            mCameraDevice = cameraDevice;
-//            try {
-//                mCamera.setPreviewTexture(mSTexture);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-            startBackgroundThread();
-            createCameraPreviewSession();
-
-        }
-
-        @Override
-        public void onDisconnected(CameraDevice cameraDevice) {
-            Log.d(sTag, "openCamera onDisconnected");
-            cameraDevice.close();
-            if (null != mCameraDevice) {
-                mCameraDevice.close();
-                mCameraDevice = null;
-            }
-        }
-
-        @Override
-        public void onError(CameraDevice cameraDevice, int i) {
-            Log.e(sTag, "openCamera onError");
-            cameraDevice.close();
-            if (null != mCameraDevice) {
-                mCameraDevice.close();
-                mCameraDevice = null;
-            }
-        }
-    };
+    private CameraDevice.StateCallback mStateCallback;
 
 
     private float[] mMvpMatrix;
@@ -155,6 +126,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
                 mGreenLine = false;
         width = height = 0;
         mLastTimeQRCodeFailed = System.currentTimeMillis();
+        mThreadRecapthId = -1;
 //        Point ss = new Point();
         //cameraSurfaceView.getDisplay().getRealSize(ss);
 
@@ -170,7 +142,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
         width = displayMetrics.widthPixels;
         height = displayMetrics.heightPixels;
         Log.d(sTag, "1)change width, height: " + width + ", " + height);
-//        mPreviewSize = new Size(width, height);
+        mPreviewSize = new Size(0, 0);
         float[] vtmp = {1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
         float[] ttmp = {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f};
         pVertex = ByteBuffer.allocateDirect(8 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -187,7 +159,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
 
 //        startBackgroundThread();
 //        instantiateCamera();
-//        instantiateStateCallback();
+        instantiateStateCallback();
 
     }
 
@@ -206,7 +178,6 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
 //        if(mStateCallback==null) instantiateStateCallback();
 
     }
-
 
 
     @Override
@@ -303,7 +274,6 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
             GLES20.glVertexAttribPointer(ph, 2, GLES20.GL_FLOAT, false, 4 * 2, pVertex);
             GLES20.glVertexAttribPointer(tch, 2, GLES20.GL_FLOAT, false, 4 * 2, pTexCoord);
             GLES20.glVertexAttrib1f(typeh, 1f);
-//            GLES20.glVertexAttrib1f(foundh, mGreenLine == true ? 1 : 0);
             GLES20.glEnableVertexAttribArray(ph);
             GLES20.glEnableVertexAttribArray(tch);
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -335,6 +305,35 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
                     }
                 }
 
+                if (!mPhotoElaboration && !mQRCodeFounded) {
+//            mTakePhoto = false;
+                    if (mPixelBuf == null) {
+                        mPixelBuf = ByteBuffer.allocateDirect(width * height * 4);
+                        mPixelBuf.order(ByteOrder.LITTLE_ENDIAN);
+                    }
+                    mPixelBuf.rewind();
+                    GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE,
+                            mPixelBuf);
+                    saveFrame();
+                } else if (!mQRCodeFounded && mThreadRecapthId == -1) {
+                    //dopo 10s dal ritrovamento riabilito l'acquisizione di un nuovo QRCode
+
+                    synchronized (this) {
+                        Thread t = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                while (true) {
+                                    if (System.currentTimeMillis() - mLastTimeQRCodeFailed > 10000) {
+//                                        mLastTimeQRCodeFailed = System.currentTimeMillis();
+                                        mQRCodeFounded = false;
+                                    }
+                                }
+                            }
+                        });
+                        t.start();
+                        mThreadRecapthId = t.getId();
+                    }
+                }
 
 //                Log.d(sTag, ""+mCurrentWidthForLine+", "+mWidthForLine1+", "+mWidthForLine2+
 //                        ", "+(-mHeightForLine1)+", "+(-mHeightForLine2));
@@ -346,7 +345,6 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
 //                        mCurrentWidthForLine + 0.15f, mWidthForLine2, 0f,
 //                        mCurrentWidthForLine, mWidthForLine2, 0f,
 //                };
-
 
 
 //                float[] linetmp = {-mCurrentWidthForLine, mHeightForLine1, 0f,
@@ -395,7 +393,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
                 GLES20.glEnableVertexAttribArray(ph);
                 GLES20.glVertexAttribPointer(ph, 3, GLES20.GL_FLOAT, false,
                         3 * 4, vertexBuffer);
-                GLES20.glLineWidth(4);
+                GLES20.glLineWidth(4.5f);
                 GLES20.glDrawArrays(GLES20.GL_LINES, 0, 3);
             }
 
@@ -403,17 +401,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
 
 
 //            if (mTakePhoto && !mPhotoElaboration && !mQRCodeFounded) {
-            if (!mPhotoElaboration && !mQRCodeFounded) {
-//            mTakePhoto = false;
-                if (mPixelBuf == null) {
-                    mPixelBuf = ByteBuffer.allocateDirect(width * height * 4);
-                    mPixelBuf.order(ByteOrder.LITTLE_ENDIAN);
-                }
-                mPixelBuf.rewind();
-                GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE,
-                        mPixelBuf);
-                saveFrame();
-            }
+
             mDrawSemaphore.release();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -474,6 +462,56 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
             mCameraOpenCloseLock.release();
         }
     }
+
+    private void instantiateStateCallback() {
+        mStateCallback = new CameraDevice.StateCallback() {
+            @Override
+            public void onOpened(CameraDevice cameraDevice) {
+                Log.d(sTag, "openCamera onOpened");
+                mCameraDevice = cameraDevice;
+//            try {
+//                mCamera.setPreviewTexture(mSTexture);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+                startBackgroundThread();
+                createCameraPreviewSession();
+
+            }
+
+            @Override
+            public void onDisconnected(CameraDevice cameraDevice) {
+                Log.d(sTag, "openCamera onDisconnected");
+                cameraDevice.close();
+                if (null != mCameraDevice) {
+                    mCameraDevice.close();
+                    mCameraDevice = null;
+                    if (mThreadRecapthId != -1) {
+                        for (Thread t : Thread.getAllStackTraces().keySet()) {
+                            if (t.getId() == mThreadRecapthId) {
+                                try {
+                                    t.join();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onError(CameraDevice cameraDevice, int i) {
+                Log.e(sTag, "openCamera onError");
+                cameraDevice.close();
+                if (null != mCameraDevice) {
+                    mCameraDevice.close();
+                    mCameraDevice = null;
+                }
+            }
+        };
+    }
+
 
     private void initTextures() {
         mTextureIds = new int[1];
@@ -539,12 +577,24 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
                             try {
                                 mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                                 mPreviewRequestBuilder.addTarget(mSurface);
-                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_PORTRAIT);
-                                if (mCameraManager.getCameraCharacteristics(mCameraId).get(CameraCharacteristics.FLASH_INFO_AVAILABLE))
-                                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
-                                else
-                                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
+//                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+////                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_PORTRAIT);
+//                                if (mCameraManager.getCameraCharacteristics(mCameraId).get(CameraCharacteristics.FLASH_INFO_AVAILABLE))
+//                                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+//                                else
+//                                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+
+                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+//                                mPreviewRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
+                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_CANCEL);
+                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
+                                mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER, CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+
+                                int rotation = mCameraSurfaceView.get().getActivity().getWindowManager().getDefaultDisplay().getRotation();
+                                mPreviewRequestBuilder.set(CaptureRequest.JPEG_QUALITY, (byte) CameraProfile.getJpegEncodingQualityParameter(
+                                        CameraProfile.QUALITY_HIGH));
+
                                 mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, mBackgroundHandler);
                             } catch (CameraAccessException e) {
                                 Log.e(sTag, "CameraAccessException", e);
@@ -562,9 +612,8 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @SuppressWarnings("deprecation")
-    private boolean instantiateCamera() {
+
+    private void instantiateCamera() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             mCamera = Camera.open();
             try {
@@ -575,35 +624,35 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
         } else {
             if (ActivityCompat.checkSelfPermission(mCameraSurfaceView.get().getContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 Log.e(sTag, "camera permissions not granted");
-                return false;
+                return;
             }
             try {
                 mCameraManager = (CameraManager) mCameraSurfaceView.get().getContext().getSystemService(Context.CAMERA_SERVICE);
             } catch (RuntimeException e) {
                 Log.e(sTag, "cameraManager getSystemService", e);
-                return false;
+                return;
             }
             if (mCameraManager == null) {
                 Log.e(sTag, "cameraManager null");
-                return false;
+                return;
             }
             try {
                 if (mCameraManager.getCameraIdList() == null || mCameraManager.getCameraIdList().length == 0) {
                     Log.e(sTag, "cameraIdList length=0");
-                    return false;
+                    return;
                 }
                 for (final String cameraID : mCameraManager.getCameraIdList()) {
                     CameraCharacteristics characteristics = mCameraManager.getCameraCharacteristics(cameraID);
                     if (characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT)
                         continue;
                     mCameraId = cameraID;
-//                    StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-//                    for (Size psize : map.getOutputSizes(SurfaceTexture.class)) {
-//                        if (width == psize.getWidth() && height == psize.getHeight()) {
-//                            mPreviewSize = psize;
-//                            break;
-//                        }
-//                    }
+                    StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                    for (Size psize : map.getOutputSizes(SurfaceTexture.class)) {
+                        if (width > psize.getWidth() && height > psize.getHeight()) {
+                            mPreviewSize = psize;
+                            break;
+                        }
+                    }
                     break;
                 }
             } catch (CameraAccessException e) {
@@ -614,8 +663,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
                 Log.e("mr", "cacPreviewSize - Security Exception");
             }
         }
-        Log.e(sTag,  ((mCameraId != null?true:false)?"cameraId found +"+mCameraId:"cameraId is null"));
-        return mCameraId != null?true:false;
+        Log.d(sTag, ((mCameraId != null ? true : false) ? "cameraId found +" + mCameraId : "cameraId is null"));
     }
 
 
@@ -682,9 +730,10 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
                     file = new File(ArgonApplication.getMediaCacheDir(), filename);
 //                    Log.d(sTag, "file: " + file.getAbsolutePath());
                     bos = new BufferedOutputStream(new FileOutputStream(file));
-                    bmp.compress(Bitmap.CompressFormat.PNG, 90, bos);
+                    bmp.compress(Bitmap.CompressFormat.JPEG, 90, bos);
                     //lo aggiorno per evitare tempi morti
                     mLastTimeQRCodeFailed = System.currentTimeMillis();
+                    imageOrientation(file.getAbsolutePath());
                 } catch (NotFoundException e) {
                     Log.d(sTag, "BitmapBinary NotFoundException");
                     e.printStackTrace();
@@ -718,6 +767,7 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
                     for (int i = 0; i < 5000; i++) ;
                     mCameraSurfaceView.get().getActivity().hideProgress();
                     mGreenLine = false;
+
                     mPhotoElaboration = false;
                 }
 
@@ -758,7 +808,63 @@ public class CameraSurfaceRenderer implements GLSurfaceView.Renderer, SurfaceTex
 
     private void deleteTex() {
         Log.d(sTag, "deleteTex");
-        GLES20.glDeleteTextures ( 1, mTextureIds, 0 );
+        GLES20.glDeleteTextures(1, mTextureIds, 0);
+    }
+
+    public void setCameraDisplayOrientation() {
+
+
+        int rotation = mCameraSurfaceView.get().getActivity().getWindowManager().getDefaultDisplay()
+                .getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0: degrees = 0; break;
+            case Surface.ROTATION_90: degrees = 90; break;
+            case Surface.ROTATION_180: degrees = 180; break;
+            case Surface.ROTATION_270: degrees = 270; break;
+        }
+        int result;
+//        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+//            result = (info.orientation + degrees) % 360;
+//            result = (360 - result) % 360;  // compensate the mirror
+//        } else {  // back-facing
+//        result = (info.orientation - degrees + 360) % 360;
+//        }
+
+        try {
+            Log.d(sTag, "orientation: "+mCameraManager.getCameraCharacteristics(mCameraId).get(CameraCharacteristics.SENSOR_ORIENTATION)+", "+degrees);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void imageOrientation(String imageFilePath) {
+        ExifInterface exif = null;
+        try {
+            exif = new ExifInterface(imageFilePath);
+            int orientation = exif.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_UNDEFINED);
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_NORMAL:
+                    Log.d(sTag, "imageOrientation "+0);
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    Log.d(sTag, "imageOrientation "+270);
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    Log.d(sTag, "imageOrientation "+180);
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    Log.d(sTag, "imageOrientation "+90);
+                    break;
+                default:
+                    Log.d(sTag, "imageOrientation unknown "+orientation);
+            }
+        } catch (IOException e) {
+            Log.e(sTag, "imageOrientation ERROR ", e);
+        }
     }
 
 }

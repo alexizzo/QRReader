@@ -34,7 +34,7 @@ public class ArgonApplication extends Application {
     }
 
     public static void setMediaCacheDir() {
-        if(sMediaCacheDir!=null) initializeMediaCacheDir();
+        if(sMediaCacheDir==null) initializeMediaCacheDir();
     }
 
     private static void initializeMediaCacheDir() {
@@ -57,6 +57,7 @@ public class ArgonApplication extends Application {
                 sMediaCacheDir = null;
             }
         }
+        Log.d(sTag, "mediaCacheDir: "+((sMediaCacheDir!=null)?sMediaCacheDir.getAbsolutePath():"null"));
     }
 
 }

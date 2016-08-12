@@ -21,8 +21,8 @@ void main(void) {
     if(v_type==1.0)
         gl_FragColor = texture2D(texture, v_textureCoord);
         else {
-            if(v_found == 0.0) gl_FragColor = vec4(1.0f, 0.0f, 0.0f, (1.0f-v_position.y));
-            else gl_FragColor = vec4(0.1f, 1.0f, 0.0f, 1.0f);
+            if(v_found == 0.0) gl_FragColor = vec4(1.0, 0.0, 0.0, (1.0-v_position.x));
+            else gl_FragColor = vec4(0.1, 1.0, 0.0, 1.0);
         }
 
 }
